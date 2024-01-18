@@ -43,15 +43,12 @@ def assistant():
     # Get the user's message from the request
     user_message = request.json["message"]
 
-    # Call the OpenAI Assistant API
-    response = openai.Completion.create(
-        engine="davinci",
-        prompt=user_message,
-        max_tokens=100,
-        temperature=0.7,
-        n=1,
-        stop=None,
-    )
+assistant = client.beta.assistants.create(
+    name="Math Tutor",
+    instructions="You are a personal math tutor. Write and run code to answer math questions.",
+    tools=[{"type": "code_interpreter"}],
+    model="gpt-4-1106-preview"
+)
 
     # Get the assistant's response from the API response
     assistant_response = response.choices[0].text.strip()
