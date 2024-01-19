@@ -3,18 +3,28 @@ from datetime import datetime
 import math
 from rates import *
 
+
 # Vacation rates
 def calculate_vacation(total_days, has_children, is_combat):
     if total_days < VACATION_COMPENSATION_DAILY_THRESHOLD:
         return 0
-    children_bonus = VACATION_CHILD_BONUS_COMBATANT if is_combat else VACATION_CHILD_BONUS_NON_COMBATANT
-    base_vacation = VACATION_RATE_COMBATANT if is_combat else VACATION_RATE_NON_COMBATANT
+    children_bonus = (
+        VACATION_CHILD_BONUS_COMBATANT
+        if is_combat
+        else VACATION_CHILD_BONUS_NON_COMBATANT
+    )
+    base_vacation = (
+        VACATION_RATE_COMBATANT if is_combat else VACATION_RATE_NON_COMBATANT
+    )
     return base_vacation + children_bonus if has_children else base_vacation
 
+
 # Days
-def calculate_days(date_ranges):
+def total_days_in_service(date_ranges):
     total = 0
     for date_range in date_ranges:
+        if date_range["startDate"] > date_range["endDate"]:
+            return 0
         total += total_days_in_range(date_range["startDate"], date_range["endDate"])
     return total
 
@@ -115,7 +125,7 @@ def calculate_compensation(inputs):
     service_before = float(inputs["serviceBefore"])
     operation24_days = float(inputs["operation24Days"])
     is_days_straight_in_war = is_one_range_more_than_5_days(date_ranges)
-    days_in_war = calculate_days(date_ranges)
+    days_in_war = total_days_in_service(date_ranges)
     result = special_grant_calculation(
         service_before, days_in_war, inputs["isDaysStraight"] or is_days_straight_in_war
     )

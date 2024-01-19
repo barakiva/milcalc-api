@@ -5,7 +5,7 @@ from idf_calc import (
     get_total_days_in_2023,
     special_grant_calculation,
     is_one_range_more_than_5_days,
-    calculate_days,
+    total_days_in_service,
     calculate_vacation,
 )
 from rates import *
@@ -14,20 +14,66 @@ from rates import *
 @pytest.mark.parametrize(
     "service_days, has_children, is_combat, expected",
     [
-        (59, False, False, 0), # 59 days is less than 60 days
-        (59, True, True, 0), # 59 days is less than 60 days
-        (60, False, False, 1500), # no children, non-combatant
-        (60, True, False, 2000), # has children, non-combatant
-        (60, False, True, 3500), # no children, combatant
-        (60, True, True, 4500), # has children, combatant
+        (59, False, False, 0),  # 59 days is less than 60 days
+        (59, True, True, 0),  # 59 days is less than 60 days
+        (60, False, False, 1500),  # no children, non-combatant
+        (60, True, False, 2000),  # has children, non-combatant
+        (60, False, True, 3500),  # no children, combatant
+        (60, True, True, 4500),  # has children, combatant
     ],
 )
 def test_calculate_vacation(service_days, has_children, is_combat, expected):
     assert calculate_vacation(service_days, has_children, is_combat) == expected
 
 
-def create_date_range(start_date, end_date):
-    return {"startDate": datetime(*start_date), "endDate": datetime(*end_date)}
+@pytest.mark.parametrize(
+    "date_ranges, expected",
+    [
+        ([], 0),  # no date ranges
+        (
+            [
+                {
+                    "startDate": datetime(2021, 1, 1),
+                    "endDate": datetime(2021, 1, 4),
+                },  # 4 days
+                {
+                    "startDate": datetime(2021, 1, 6),
+                    "endDate": datetime(2021, 1, 11),
+                },  # 6 days
+            ],
+            10,
+        ),
+        (
+            [{"startDate": datetime(2023, 10, 7), "endDate": datetime(2024, 1, 9)}],
+            95,
+        ),
+    ],
+)
+def test_total_days_add_up(date_ranges, expected):
+    assert total_days_in_service(date_ranges) == expected
+
+
+@pytest.mark.parametrize(
+    "date_ranges, expected",
+    [
+        ([], 0),  # no date ranges
+        (
+            [
+                {
+                    "startDate": datetime(2021, 1, 1),
+                    "endDate": datetime(2020, 1, 4),
+                },  # 4 days
+                {
+                    "startDate": datetime(2021, 1, 6),
+                    "endDate": datetime(2020, 1, 11),
+                },  # 6 days
+            ],
+            0,
+        ),
+    ],
+)
+def test_invalid_dates_dont_add_up(date_ranges, expected):
+    assert total_days_in_service(date_ranges) == expected
 
 
 @pytest.mark.parametrize(
@@ -40,6 +86,10 @@ def create_date_range(start_date, end_date):
 )
 def test_total_days_in_range(start_date, end_date, expected):
     assert total_days_in_range(start_date, end_date) == expected
+
+
+def create_date_range(start_date, end_date):
+    return {"startDate": datetime(*start_date), "endDate": datetime(*end_date)}
 
 
 @pytest.mark.parametrize(
@@ -111,9 +161,9 @@ def test_is_one_range_more_than_5_days():
 
 
 def test_calculate_days():
-    assert calculate_days([]) == 0
+    assert total_days_in_service([]) == 0
     assert (
-        calculate_days(
+        total_days_in_service(
             [
                 {
                     "startDate": datetime(2021, 1, 1),
@@ -128,7 +178,7 @@ def test_calculate_days():
         == 10
     )
     assert (
-        calculate_days(
+        total_days_in_service(
             [{"startDate": datetime(2023, 10, 7), "endDate": datetime(2024, 1, 9)}]
         )
         == 95
